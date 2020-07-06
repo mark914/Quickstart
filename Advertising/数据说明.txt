@@ -1,0 +1,7 @@
+该数据集记录了某产品在200个不同市场的销售情况及该产品在每个市场中3类广告媒体的预算，这3类媒体是：TV, radio, newspaper.
+
+因变量：sales，表示销量
+
+自变量：TV，radio，newspaper，表示在不同媒体上的广告预算
+
+目标：分析sales与TV，radio，newspaper之间的依赖关系。
