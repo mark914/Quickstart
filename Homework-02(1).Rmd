@@ -1,0 +1,250 @@
+---
+title: "Homework 2"
+output: pdf_document
+---
+```{r setup, message = F, include=FALSE}
+options(htmltools.dir.version = FALSE)
+library(tidyverse)
+library(DAAG)
+```
+
+The data set calif_penn_2011.csv contains information about the housing stock of California and Pennsylvania, as of 2011.  Information as aggregated into "Census tracts", geographic regions of a few thousand people which are supposed to be fairly homogeneous economically and socially.
+
+1. _Loading and cleaning_
+    a. Load the data into a dataframe called `ca_pa`.
+```{r}
+ca_pa <- read_csv("data/calif_penn_2011.csv")
+
+```
+  
+    b. How many rows and columns does the dataframe have?
+```{r}
+nrow(ca_pa)
+ncol(ca_pa)
+```
+    
+    c. Run this command, and explain, in words, what this does:
+```{r}
+colSums(apply(ca_pa,c(1,2),is.na))
+```
+    **解答**:apply(ca_pa,c(1,2),is.na)可以确定ca_pa中的每一个值是否为缺失数据，从而得到一个只含有TRUE和FALSE的dataframe。然后colSums(apply(ca_pa,c(1,2),is.na))则对其每一列求和，得到的结果就是ca_pa中每一个变量对应的缺失值的总数
+    
+    
+    d. The function `na.omit()` takes a dataframe and returns a new dataframe, omitting any row containing an NA value.  Use it to purge the data set of rows with incomplete data.
+```{r}
+ca_pa.new <- na.omit(ca_pa)
+```
+    
+    e. How many rows did this eliminate?
+```{r}
+sum(!complete.cases(ca_pa))
+```
+  
+    f. Are your answers in (c) and (e) compatible? Explain.
+```{r}
+sum(colSums(apply(ca_pa,c(1,2),is.na)))
+```
+   **解答**：是一致的，虽然他们的结果不一样，但是反应的问题是一致的，因为有可能有些行存在多个缺失值。
+
+2. _This Very New House_  
+    a. The variable `Built_2005_or_later` indicates the percentage of houses in each Census tract built since 2005.  Plot median house prices against this variable.
+```{r}
+plot(Median_house_value~Built_2005_or_later,data = ca_pa.new)
+ggplot(ca_pa.new,aes(y = Median_house_value,x = Built_2005_or_later,col = STATEFP)) +
+  geom_point() +
+  labs(title = "Median_house_value~Built_2005_or_later")
+```
+    
+    b. Make a new plot, or pair of plots, which breaks this out by state.  Note that the state is recorded in the `STATEFP` variable, with California being state 6 and Pennsylvania state 42.
+```{r}
+ggplot(ca_pa.new,aes(y = Median_house_value,x = Built_2005_or_later,col = STATEFP)) +
+  geom_point() +
+  labs(title = "Median_house_value~Built_2005_or_later") +
+  facet_wrap(~STATEFP,scales = "free")
+```
+    
+
+3. _Nobody Home_  
+The vacancy rate is the fraction of housing units which are not occupied.  The dataframe contains columns giving the total number of housing units for each Census tract, and the number of vacant housing units.  
+    a. Add a new column to the dataframe which contains the vacancy rate.  What are the minimum, maximum, mean, and median vacancy rates?
+```{r}
+Vacancy_rate <- ca_pa$Total_units/ca_pa$Vacant_units
+Vacancy_rate <- ca_pa.new$Total_units/ca_pa.new$Vacant_units
+ca_pa.new$Vacancy_rate <- Vacancy_rate
+ca_pa.new$Vacancy_rate[Vacancy_rate == Inf] = 0
+summary(ca_pa.new$Vacancy_rate)
+
+```
+    
+    b. Plot the vacancy rate against median house value.
+```{r}
+ggplot(ca_pa.new,aes(x = Median_house_value,y = Vacancy_rate,col = STATEFP))+
+  geom_point()
+```
+    
+    c. Plot vacancy rate against median house value separately for California and for Pennsylvania.  Is there a difference?
+```{r}
+ggplot(ca_pa.new,aes(x = Median_house_value,y = Vacancy_rate,col = STATEFP))+
+  geom_point()+
+  facet_wrap(~STATEFP,scales = "free")
+```
+    
+    
+4. The column `COUNTYFP` contains a numerical code for counties within each state.  We are interested in Alameda County (county 1 in California), Santa Clara (county 85 in California), and Allegheny County (county 3 in Pennsylvania).
+    a. Explain what the block of code at the end of this question is supposed to accomplish, and how it does it.
+**解答**:
+>acca <- c()
+for (tract in 1:nrow(ca_pa)) {
+  if (ca_pa$STATEFP[tract] == "06") {
+    if (ca_pa$COUNTYFP[tract] =="001") {
+      acca <- c(acca, tract)
+    }
+  }
+}
+这部分代码是用来统计该表中的California中的Alameda County出现了几次，结果是361次
+>accamhv <- c()
+for (tract in acca) {
+  accamhv <- c(accamhv, ca_pa[tract,10])
+}
+median(accamhv)
+提取该表的第十列的前361行,即Median_house_value的前十行，并求中位数。
+
+
+    b. Give a single line of R which gives the same final answer as the block of code.  Note: there are at least two ways to do this; you just have to find one.
+**解答**：
+```{r}
+#统计该表中的California中的Alameda County出现了几次
+sum(ca_pa$STATEFP == "06"&ca_pa$COUNTYFP == "001")
+#提取该表的第十列的前361行,即Median_house_value的前十行，并求中位数
+accamhv.new <- ca_pa$Median_house_value[1:361]
+median(accamhv.new,na.rm = T)
+
+```
+    
+    c. For Alameda, Santa Clara and Allegheny Counties, what were the average percentages of housing built since 2005?
+    
+  **解答**：
+```{r}
+Alameda <- ca_pa[ca_pa$STATEFP == "06"&ca_pa$COUNTYFP == "001",]
+Santa_Clara <- ca_pa[ca_pa$STATEFP == "06"&ca_pa$COUNTYFP == "085",]
+Allegheny <- ca_pa[ca_pa$STATEFP == "42"&ca_pa$COUNTYFP == "003",]
+Alameda_built <- subset(Alameda,select = c(16:24))
+Santa_Clara_built <- subset(Santa_Clara,select = c(16:24))
+Allegheny_built <- subset(Allegheny,select = c(16:24))
+built_time <- rbind(Alameda_built,Santa_Clara_built,Allegheny_built)
+built_time$perc_since2005 <- built_time$Built_2005_or_later/rowSums(built_time)
+mean(built_time$perc_since2005,na.rm = T)
+```
+  
+    
+    
+    d. The `cor` function calculates the correlation coefficient between two variables.  What is the correlation between median house value and the percent of housing built since 2005 in (i) the whole data, (ii) all of California, (iii) all of Pennsylvania, (iv) Alameda County, (v) Santa Clara County and (vi) Allegheny County?
+```{r}
+
+#(i)the whole data
+built_time_whole <- subset(ca_pa.new,select = c(16:24))
+built_time_whole$perc_since2005 <- built_time_whole$Built_2005_or_later/rowSums(built_time_whole)
+cor(ca_pa.new$Median_house_value,built_time_whole$perc_since2005,)
+#(ii)all of California
+built_time_California <- subset(ca_pa.new,STATEFP == "06",select = c(16:24))
+built_time_California$perc_since2005 <- built_time_California$Built_2005_or_later/rowSums(built_time_California)
+cor(ca_pa.new$Median_house_value[ca_pa.new$STATEFP == "06"],built_time_California$perc_since2005,)
+#(iii)all of Pennsylvania
+built_time_Pennsy <- subset(ca_pa.new,STATEFP == "42",select = c(16:24))
+built_time_Pennsy$perc_since2005 <- built_time_Pennsy$Built_2005_or_later/rowSums(built_time_Pennsy)
+cor(ca_pa.new$Median_house_value[ca_pa.new$STATEFP == "42"],built_time_Pennsy$perc_since2005,)
+#(iv)Alameda County
+Alameda.new <- ca_pa.new[ca_pa.new$STATEFP == "06"&ca_pa.new$COUNTYFP == "001",]
+Santa_Clara.new <- ca_pa.new[ca_pa.new$STATEFP == "06"&ca_pa.new$COUNTYFP == "085",]
+Allegheny.new <- ca_pa.new[ca_pa.new$STATEFP == "42"&ca_pa.new$COUNTYFP == "003",]
+
+Alameda_built.new <- subset(Alameda.new,select = c(16:24))
+Santa_Clara_built.new <- subset(Santa_Clara.new,select = c(16:24))
+Allegheny_built.new <- subset(Allegheny.new,select = c(16:24))
+
+Alameda_built.new$perc_since2005 <- Alameda_built.new$Built_2005_or_later/rowSums(Alameda_built.new)
+cor(Alameda.new$Median_house_value,Alameda_built.new$perc_since2005)
+#(v) Santa Clara County 
+Santa_Clara_built.new$perc_since2005 <- Santa_Clara_built.new$Built_2005_or_later/rowSums(Santa_Clara_built.new)
+cor(Santa_Clara.new$Median_house_value,Santa_Clara_built.new$perc_since2005)
+#(vi) Allegheny County
+Allegheny_built.new$perc_since2005 <- Allegheny_built.new$Built_2005_or_later/rowSums(Allegheny_built.new)
+cor(Allegheny.new$Median_house_value,Allegheny_built.new$perc_since2005)
+```
+    
+    e. Make three plots, showing median house values against median income, for Alameda, Santa Clara, and Allegheny Counties.  (If you can fit the information into one plot, clearly distinguishing the three counties, that's OK too.)
+```{r}
+Alameda <- ca_pa[ca_pa$STATEFP == "06"&ca_pa$COUNTYFP == "001",]
+Santa_Clara <- ca_pa[ca_pa$STATEFP == "06"&ca_pa$COUNTYFP == "085",]
+Allegheny <- ca_pa[ca_pa$STATEFP == "42"&ca_pa$COUNTYFP == "003",]
+
+ASA <- rbind(Alameda,Santa_Clara,Allegheny)
+ggplot(ASA,aes(x = Median_household_income, y = Median_house_value, col = COUNTYFP))+
+  geom_point()+
+  facet_wrap(~COUNTYFP,scales = "free")+
+  labs(title = "Alameda, Santa Clara, and Allegheny Counties" )+
+  theme(legend.position = "none")
+```
+    
+```{r, eval=FALSE}
+acca <- c()
+for (tract in 1:nrow(ca_pa)) {
+  if (ca_pa$STATEFP[tract] == "06") {
+    if (ca_pa$COUNTYFP[tract] =="001") {
+      acca <- c(acca, tract)
+    }
+  }
+}
+accamhv <- c()
+for (tract in acca) {
+  accamhv <- c(accamhv, ca_pa[tract,10])
+}
+accamhv <- as.numeric(accamhv)
+median(accamhv,na.rm = T)
+```
+
+MB.Ch1.11. Run the following code:
+```{r}
+gender <- factor(c(rep("female", 91), rep("male", 92)))
+table(gender)
+gender <- factor(gender, levels=c("male", "female"))
+table(gender)
+gender <- factor(gender, levels=c("Male", "female"))
+# Note the mistake: "Male" should be "male"
+table(gender)
+table(gender, exclude=NULL)
+rm(gender)  # Remove gender
+```
+Explain the output from the successive uses of table().
+**解答**：
+
+     
+MB.Ch1.12. Write a function that calculates the proportion of values in a vector x that exceed some value cutoff.
+
+```{r}
+
+```
+
+(a) Use the sequence of numbers 1, 2, . . . , 100 to check that this function gives the result that is expected.
+```{r}
+
+```
+
+(b) Obtain the vector ex01.36 from the Devore6 (or Devore7) package. These data give the times required for individuals to escape from an oil platform during a drill. Use dotplot() to show the distribution of times. Calculate the proportion of escape times that exceed 7 minutes.
+```{r}
+
+```
+
+MB.Ch1.18. The Rabbit data frame in the MASS library contains blood pressure change measurements on five rabbits (labeled as R1, R2, . . . ,R5) under various control and treatment conditions. Read the help file for more information. Use the unstack() function (three times) to convert Rabbit to the following form:
+
+Treatment Dose   R1   R2   R3   R4   R5 
+
+1 Control 6.25  0.50 1.00 0.75 1.25 1.5 
+
+2 Control 12.50 4.50 1.25 3.00 1.50 1.5 
+
+....
+```{r}
+
+```
+
