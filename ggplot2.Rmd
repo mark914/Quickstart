@@ -12,8 +12,26 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(MASS)
 ```
-
-
+#cheat sheet summary
+1. a <- ggplot(economics, aes(date, unemploy))
+2. b <- ggplot(seals, aes(x = long, y = lat)) 
+3. c <- ggplot(mpg,aes(hwy))
+    +c2 <- ggplot(mpg)
+4. d <- ggplot(mpg,aes(fl))
+5. e <- ggplot(mpg,aes(cty,hwy))
+6. f <- ggplot(mpg,aes(class,hwy))
+7. g <- ggplot(diamonds,aes(cut,color))
+8. h <- ggplot(diamonds,aes(carat,price))
+9. i <- ggplot(economics,aes(date,unemploy))
+10. j <- ggplot(df,aes(grp,fit,ymin = fit-se,ymax = fit+se))
+11. k <- ggplot(data, aes(fill = murder))
+12. l <- ggplot(seals, aes(long, lat))
+13. n <- d + geom_bar(aes(fill = fl))
+14. o <- c + geom_dotplot(aes(fill = ..x..))
+15. p <- e + geom_point(aes(shape = fl, size = cyl))
+16. r <- d + geom_bar()
+17. s <- ggplot(mpg,aes(fl,fill = drv))
+18. t <- ggplot(mpg,aes(cty,hwy))+geom_point()
 
 
 ##load data
